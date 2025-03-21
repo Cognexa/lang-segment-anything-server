@@ -1,10 +1,8 @@
 FROM nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04
 
-# Set environment variables
-ENV DEBIAN_FRONTEND=noninteractive
-ENV GRADIO_SERVER_NAME="0.0.0.0"
 
-# Install necessary packages
+ENV DEBIAN_FRONTEND=noninteractive
+
 RUN apt-get update && apt-get install -y \
     python3 \
     python3-pip \
@@ -12,13 +10,12 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     git
 
-COPY . /lang-segment-anything
+WORKDIR /app
 
-# Install dependencies
-WORKDIR /lang-segment-anything
+COPY requirements.txt requirements.txt
 RUN pip install -r requirements.txt
 
-EXPOSE 8000
+COPY lang_sam lang_sam
+COPY server.py server.py
 
-# Entry point
-CMD ["python3", "app.py"]
+CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8082", "--reload"]

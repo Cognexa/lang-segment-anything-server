@@ -1,0 +1,26 @@
+services:
+  segmenter:
+    container_name: lang-segment-anything-server
+    build:
+      dockerfile: Dockerfile
+      context: ./
+    restart: unless-stopped
+    command: uvicorn server:app --host 0.0.0.0 --port 8082 --reload
+    volumes:
+      - ~/.cache/huggingface/hub:/root/.cache/huggingface/hub
+    ports:
+      - "8082:8082"
+    develop:
+      watch:
+        - action: rebuild
+          path: Dockerfile
+        - action: sync
+          path: server.py
+          target: /app/server.py
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [ gpu ]
