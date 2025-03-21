@@ -36,7 +36,7 @@ class BoundingBoxModel(BaseModel):
 
 
 @app.post("/segment")
-async def segment_image(parameters: str = Form(...), photos: List[UploadFile] = File(...)) -> List[BoundingBoxModel]:
+async def segment_image(parameters: str = Form(...), photos: List[UploadFile] = File(...)) -> List[List[BoundingBoxModel]]:
     model_params = PanelSegmentationParameters.model_validate_json(parameters)
 
     images = []
@@ -56,17 +56,21 @@ async def segment_image(parameters: str = Form(...), photos: List[UploadFile] = 
 
     torch.cuda.empty_cache()
 
-    boxes_results = []
-    for idx, result in enumerate(gdino_results):
-        if result["labels"]:
-            result["boxes"] = result["boxes"].cpu().numpy()
-            for box in result["boxes"]:
+    images_bboxes = []
+    for idx, image_result in enumerate(gdino_results):
+        bboxes = []
+        if image_result["labels"]:
+            image_result["boxes"] = image_result["boxes"].cpu().numpy()
+
+            for box in image_result["boxes"]:
                 box_instance = BoundingBoxModel(
                     center_x=box[0] + (box[2] - box[0]) / 2,
                     center_y=box[1] + (box[3] - box[1]) / 2,
                     width=box[2] - box[0],
                     height=box[3] - box[1],
                 )
-                boxes_results.append(box_instance)
+                bboxes.append(box_instance)
 
-    return boxes_results
+        images_bboxes.append(bboxes)
+
+    return images_bboxes
